@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+/* Light only — the brief rules out dark mode, and the planner UI is built
+   against a fixed slate palette. */
+@theme inline {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+html,
+body {
+  background: #f1f5f9; /* slate-100, matches the planner's root */
+  color: #0f172a; /* slate-900 */
+  font-family: var(--font-sans);
+}
