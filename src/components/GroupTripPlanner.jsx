@@ -394,7 +394,7 @@ export default function GroupTripPlanner({ trip }) {
 
   const plan = useMemo(
     () => packTrip({ activities: TRIP.activities, travelers: TRIP.travelers, days, locks, votes, mode }),
-    [days, locks, votes, mode]
+    [TRIP.activities, TRIP.travelers, days, locks, votes, mode]
   );
 
   const nights = Math.max(days - 1, 1);
@@ -415,7 +415,7 @@ export default function GroupTripPlanner({ trip }) {
       b.yes - a.yes ||
       b.within1km - a.within1km ||
       (a.best?.total ?? 1e9) - (b.best?.total ?? 1e9));
-  }, [rawStays, plan.chosen, stayVotes]);
+  }, [rawStays, plan.chosen, stayVotes, TRIP.travelers]);
 
   const stay = stays.find((s) => s.id === chosenStay) || stays[0];
   const perPersonTotal = plan.perPersonActivityCost + (stay?.perPerson || 0);
@@ -451,7 +451,7 @@ export default function GroupTripPlanner({ trip }) {
       : " Everyone still gets all three priorities.";
     const bed = stay ? ` Best stay is ${stay.name}, ${TRIP.symbol}${stay.perPerson} each.` : "";
     return head + who + bed;
-  }, [days, plan, satisfaction, stay]);
+  }, [days, plan, satisfaction, stay, TRIP.symbol]);
 
   const speak = async () => {
     // POST /v1/text-to-speech/{voiceId} from your backend, then play the blob.
@@ -702,7 +702,7 @@ export default function GroupTripPlanner({ trip }) {
             <>
               <div className="flex items-center gap-2 mb-3 flex-wrap">
                 <Bed size={13} className="text-slate-400" />
-                <span className={L}>{nights} nights · {TRIP.travelers.length} guests · searched inside your plan's map area</span>
+                <span className={L}>{nights} nights · {TRIP.travelers.length} guests · searched inside your plan&apos;s map area</span>
                 <StatusPill status={status} />
                 <button onClick={() => setLiveStays((v) => !v)}
                   className={"ml-auto text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition flex items-center gap-1 " + (liveStays ? "bg-slate-900 text-white border-slate-900" : "border-slate-300 hover:bg-slate-50")}>
@@ -765,14 +765,49 @@ export default function GroupTripPlanner({ trip }) {
                           )}
                         </div>
                         <div className="space-y-1">
-                          {s.suppliers.map((sup, i) => (
-                            <a key={sup.name} href={sup.link || s.url || undefined}
-                              target="_blank" rel="noopener noreferrer"
-                              className={"flex items-center justify-between text-[11px] px-1.5 py-1 rounded transition " + (i === 0 ? "bg-white font-semibold" : "text-slate-400 hover:text-slate-700")}>
-                              <span>{SUPPLIER_LABEL[sup.name] || sup.name}{i === 0 && <span className="ml-1.5 text-[9px] uppercase tracking-wider text-emerald-600">cheapest</span>}</span>
-                              <span className="tabular-nums">{TRIP.symbol}{sup.total}<span className="text-slate-300 ml-1">· {TRIP.symbol}{sup.perNight}/n</span></span>
-                            </a>
-                          ))}
+                          {s.suppliers.map((sup, i) => {
+                            const href = sup.link || s.url || "";
+                            const className =
+                              "flex items-center justify-between text-[11px] px-1.5 py-1 rounded transition " +
+                              (i === 0 ? "bg-white font-semibold" : "text-slate-400 hover:text-slate-700");
+                            const body = (
+                              <>
+                                <span>
+                                  {SUPPLIER_LABEL[sup.name] || sup.name}
+                                  {i === 0 && (
+                                    <span className="ml-1.5 text-[9px] uppercase tracking-wider text-emerald-600">
+                                      cheapest
+                                    </span>
+                                  )}
+                                </span>
+                                <span className="tabular-nums">
+                                  {TRIP.symbol}
+                                  {sup.total}
+                                  <span className="text-slate-300 ml-1">
+                                    · {TRIP.symbol}
+                                    {sup.perNight}/n
+                                  </span>
+                                </span>
+                              </>
+                            );
+                            // Sample listings have no URL. An anchor with no href
+                            // is still a link, so render those rows as text.
+                            return href ? (
+                              <a
+                                key={sup.name}
+                                href={href}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={className}
+                              >
+                                {body}
+                              </a>
+                            ) : (
+                              <div key={sup.name} className={className}>
+                                {body}
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
 
@@ -812,7 +847,7 @@ function StatusPill({ status }) {
     live: ["Live prices", "bg-emerald-50 text-emerald-700"],
     loading: ["Fetching", "bg-slate-100 text-slate-500"],
     fallback: ["Sample data", "bg-slate-100 text-slate-500"],
-    rate_limited: ["Rate limited, showing last known", "bg-amber-50 text-amber-700"],
+    rate_limited: ["Rate limited, showing sample", "bg-amber-50 text-amber-700"],
     error: ["Offline, showing sample", "bg-amber-50 text-amber-700"],
   };
   const [text, cls] = map[status] || map.fallback;
